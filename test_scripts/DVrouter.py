@@ -31,16 +31,6 @@ class DVrouter(Router):
     def broadcast_distance_vector(self):
         content = json.dumps(self.distance_vector)
         for port, (neighbor, _) in self.neighbors.items():
-            #   fix loi routing loop bang Poisoned Reverse
-            poisoned_dv = {}
-            for dst, cost in self.neighbors.items():
-                #   check xem dich den dst ma phai di qua cung port voi neighbour khong
-                if dst in self.forwarding_table and self.forwarding_table[dest] == port:
-                #   neu phai di qua neighbour moi den dst, gui INFINITY cho neighbour
-                    poisoned_dv[dst] = INFINITY
-                else:
-                #   neu dst chinh la neighbour thi gui cost
-                    poisoned_dv[dst] = cost
             if 'A' <= neighbor < 'Z':
                 self.send(port, Packet(Packet.ROUTING, self.addr, neighbor, content=content))
 
