@@ -22,7 +22,7 @@ class DVrouter(Router):
         Router.__init__(self, addr)  # Initialize base class - DO NOT REMOVE
         self.heartbeat_time = heartbeat_time
         self.last_time = 0
-        #   add your own class fields and initialization code here
+        # add your own class fields and initialization code here
         self.forwarding_table = {}
         self.distance_vector = {addr: 0}
         self.distance_vector_from_neighbors = {}
@@ -34,22 +34,22 @@ class DVrouter(Router):
             #   fix loi routing loop bang Poisoned Reverse
             poisoned_dv = {}
             for dst, cost in self.neighbors.items():
-                #   check xem dich den dst ma phai di qua cung port voi neighbour khong
-                if dst in self.forwarding_table and self.forwarding_table[dest] == port:
-                #   neu phai di qua neighbour moi den dst, gui INFINITY cho neighbour
+                # check xem dich den dst phai di qua cung port voi neighbour khong
+                if dst in self.forwarding_table and self.forwarding_table[dst] == port:
+                # neu phai di qua neighbour moi den dst, gui INFINITY cho neighbour
                     poisoned_dv[dst] = INFINITY
                 else:
-                #   neu dst chinh la neighbour thi gui cost
+                # neu dst chinh la neighbour thi gui cost
                     poisoned_dv[dst] = cost
-            if 'A' <= neighbor < 'Z':
-                self.send(port, Packet(Packet.ROUTING, self.addr, neighbor, content=content))
+            content = json.dumps(poisoned_dv)
+            self.send(port, Packet(Packet.ROUTING, self.addr, neighbor, content=content))
 
     def handle_packet(self, port, packet):
         """Process incoming packet."""
         if packet.is_traceroute:
             # Hint: this is a normal data packet
             # If the forwarding table contains packet.dst_addr
-            #   send packet based on forwarding table, e.g., self.send(port, packet)
+            # send packet based on forwarding table, e.g., self.send(port, packet)
             if packet.dst_addr in self.forwarding_table:
                 self.send(self.forwarding_table[packet.dst_addr], packet)
         else:
@@ -58,12 +58,12 @@ class DVrouter(Router):
             neighbor_distance_vector = json.loads(packet.content)
             # If the received distance vector is different
             if neighbor not in self.distance_vector_from_neighbors or self.distance_vector_from_neighbors[neighbor] != neighbor_distance_vector:
-            #   update the local copy of the distance vector
+            # update the local copy of the distance vector
                 self.distance_vector_from_neighbors[neighbor] = neighbor_distance_vector
-            #   update the distance vector of this router
-            #   update the forwarding table
+            # update the distance vector of this router
+            # update the forwarding table
                 self.update_forwarding_table()
-            #   broadcast the distance vector of this router to neighbors
+            # broadcast the distance vector of this router to neighbors
                 self.broadcast_distance_vector()
 
     def handle_new_link(self, port, endpoint, cost):
