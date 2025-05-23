@@ -30,17 +30,14 @@ class DVrouter(Router):
 
     def broadcast_distance_vector(self):
         content = json.dumps(self.distance_vector)
-        for port, (neighbor, _) in self.neighbors.items():
-            #   fix loi routing loop bang Poisoned Reverse
+        for neighbor, (port, _) in self.neighbors.items():
             poisoned_dv = {}
-            for dst, cost in self.neighbors.items():
-                # check xem dich den dst phai di qua cung port voi neighbour khong
+            for dst in self.distance_vector:
                 if dst in self.forwarding_table and self.forwarding_table[dst] == port:
-                # neu phai di qua neighbour moi den dst, gui INFINITY cho neighbour
                     poisoned_dv[dst] = INFINITY
                 else:
-                # neu dst chinh la neighbour thi gui cost
-                    poisoned_dv[dst] = cost
+                    poisoned_dv[dst] = self.distance_vector[dst]
+                print(f"[{self.addr}] Send DV to {neighbor}: {poisoned_dv}")
             content = json.dumps(poisoned_dv)
             self.send(port, Packet(Packet.ROUTING, self.addr, neighbor, content=content))
 
@@ -58,26 +55,24 @@ class DVrouter(Router):
             neighbor_distance_vector = json.loads(packet.content)
             # If the received distance vector is different
             if neighbor not in self.distance_vector_from_neighbors or self.distance_vector_from_neighbors[neighbor] != neighbor_distance_vector:
-            # update the local copy of the distance vector
+                # update the local copy of the distance vector
                 self.distance_vector_from_neighbors[neighbor] = neighbor_distance_vector
-            # update the distance vector of this router
-            # update the forwarding table
+                # update the distance vector of this router
+                # update the forwarding table
                 self.update_forwarding_table()
-            # broadcast the distance vector of this router to neighbors
+                # broadcast the distance vector of this router to neighbors
                 self.broadcast_distance_vector()
+            print(f"[{self.addr}] Received DV from {neighbor}: {neighbor_distance_vector}")
 
     def handle_new_link(self, port, endpoint, cost):
         """Handle new link."""
         # TODO
-        self.neighbors[port] = (endpoint, cost)
-        #   update the distance vector of this router
+        self.neighbors[endpoint] = (port, cost)
         self.distance_vector_from_neighbors[endpoint] = {}
-        if endpoint not in self.distance_vector or cost < self.distance_vector[endpoint]:
-            self.distance_vector[endpoint] = cost
-        #   update the forwarding table
-            self.forwarding_table[endpoint] = port
-        #   broadcast the distance vector of this router to neighbors
+        self.distance_vector[endpoint] = cost
+        self.forwarding_table[endpoint] = port
         self.broadcast_distance_vector()
+        print(f"[{self.addr}] New link to {endpoint} via port {port} with cost {cost}")
 
     def handle_remove_link(self, port):
         """Handle removed link."""
@@ -94,13 +89,13 @@ class DVrouter(Router):
     def find_port_by_endpoint(self, endpoint):
         for port, (neighbor, _) in self.neighbors.items():
             if neighbor == endpoint:
-                return port
+                return self.neighbors[endpoint][0] if endpoint in self.neighbors else None
         return None
 
     def update_forwarding_table(self):
         new_distance_vector = {self.addr: 0}
         new_forwarding_table = {}
-        for port, (neighbor, cost) in self.neighbors.items():
+        for neighbor, (port, cost) in self.neighbors.items():
             if neighbor not in new_distance_vector or cost < new_distance_vector[neighbor]:
                 new_distance_vector[neighbor] = cost
                 new_forwarding_table[neighbor] = port
